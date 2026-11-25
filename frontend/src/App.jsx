@@ -245,17 +245,33 @@ function App() {
   };
 
   useEffect(() => {
+    if (!authLoading) return;
+    const safetyTimer = setTimeout(() => {
+      setAuthLoading(false);
+      if (!currentUser) {
+        performBypassLogin();
+      }
+    }, 2500);
+    return () => clearTimeout(safetyTimer);
+  }, [authLoading, currentUser]);
+
+  useEffect(() => {
     if (!authToken) {
       setAuthLoading(false);
       return;
     }
 
     let cancelled = false;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+
     const restoreSession = async () => {
       try {
         const response = await fetch(getApiUrl('/api/auth/me'), {
-          headers: authHeaders
+          headers: authHeaders,
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
         if (response.ok) {
           const data = await response.json();
           if (!cancelled && data.user) {
@@ -265,10 +281,11 @@ function App() {
           }
         }
       } catch (error) {
-        console.warn('Backend session verification offline, maintaining active demo session:', error);
+        clearTimeout(timeoutId);
+        console.warn('Backend session verification offline or slow, activating demo session:', error);
       }
 
-      // If backend verification fails or returns error, keep user logged in with demo profile
+      // If backend verification fails or times out, immediately proceed with demo profile
       if (!cancelled) {
         setCurrentUser({
           id: 'admin_demo_01',
@@ -277,9 +294,6 @@ function App() {
           role: 'Administrator',
           created_at: new Date().toISOString()
         });
-      }
-
-      if (!cancelled) {
         setAuthLoading(false);
       }
     };
@@ -287,6 +301,8 @@ function App() {
     restoreSession();
     return () => {
       cancelled = true;
+      clearTimeout(timeoutId);
+      controller.abort();
     };
   }, [authHeaders, authToken]);
 
@@ -499,6 +515,26 @@ function App() {
         <div className="auth-loading-card">
           <ShieldCheck size={28} />
           <p>Restoring secure session...</p>
+          <button
+            type="button"
+            className="secondary-btn"
+            style={{
+              marginTop: '16px',
+              padding: '8px 16px',
+              fontSize: '13px',
+              cursor: 'pointer',
+              background: 'rgba(255, 255, 255, 0.12)',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              borderRadius: '6px',
+              color: '#ffffff'
+            }}
+            onClick={() => {
+              performBypassLogin();
+              setAuthLoading(false);
+            }}
+          >
+            Enter Dashboard Directly →
+          </button>
         </div>
       </div>
     );
