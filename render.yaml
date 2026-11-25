@@ -15,4 +15,10 @@ services:
         sync: false
       - key: OPENROUTER_MODEL
         value: openai/gpt-4o-mini
+      - key: OLLAMA_URL
+        value: http://92.4.87.178:11434
+      - key: OLLAMA_MODEL
+        value: qwen2.5:14b
+      - key: OLLAMA_API_KEY
+        value: ollama
     rootDir: backend

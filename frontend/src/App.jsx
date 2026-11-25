@@ -260,6 +260,7 @@ function App() {
           const data = await response.json();
           if (!cancelled && data.user) {
             setCurrentUser(data.user);
+            setAuthLoading(false);
             return;
           }
         }

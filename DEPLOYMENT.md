@@ -8,6 +8,12 @@ Set these environment variables on your deployed backend service:
   Example: `mongodb+srv://USERNAME:PASSWORD@cluster-name.mongodb.net/?retryWrites=true&w=majority&appName=CrimeRanking`
 - `MONGO_DB_NAME`
   Example: `CrimeRankingDB`
+- `OLLAMA_URL`
+  Example: `http://92.4.87.178:11434` (Deployed Oracle VPS Ollama server)
+- `OLLAMA_MODEL`
+  Example: `qwen2.5:14b`
+- `OLLAMA_API_KEY`
+  Example: `ollama`
 
 The backend already falls back to local MongoDB for development, so your local setup can keep using `backend/.env`.
 

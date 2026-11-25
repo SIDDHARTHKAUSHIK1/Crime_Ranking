@@ -44,8 +44,9 @@ import requests
 # Load secret API keys from hidden .env
 load_dotenv()
 
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5-coder:1.5b")
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://92.4.87.178:11434").rstrip("/")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:14b")
+OLLAMA_API_KEY = os.getenv("OLLAMA_API_KEY", "ollama").strip()
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "").strip()
 OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
 OPENROUTER_URL = os.getenv("OPENROUTER_URL", "https://openrouter.ai/api/v1/chat/completions")
@@ -71,9 +72,12 @@ camera_processors = {}
 
 
 def is_ollama_available():
-    """Return True when the local Ollama HTTP server is responding."""
+    """Return True when the Ollama HTTP server is responding."""
     try:
-        response = requests.get(f"{OLLAMA_URL}/api/tags", timeout=3)
+        headers = {}
+        if OLLAMA_API_KEY:
+            headers["Authorization"] = f"Bearer {OLLAMA_API_KEY}"
+        response = requests.get(f"{OLLAMA_URL}/api/tags", headers=headers, timeout=6)
         response.raise_for_status()
         return True
     except requests.exceptions.RequestException:
@@ -82,11 +86,15 @@ def is_ollama_available():
 
 def ensure_ollama_service():
     """
-    Start Ollama on demand when the binary is installed but the local server
-    is not yet listening. This keeps the help desk working in local demos.
+    Ensure Ollama is accessible. For remote Ollama (like Oracle VPS), check connectivity.
+    For local Ollama instances, start the service if installed and not yet listening.
     """
     if is_ollama_available():
         return True
+
+    is_local = "127.0.0.1" in OLLAMA_URL or "localhost" in OLLAMA_URL
+    if not is_local:
+        return False
 
     ollama_path = shutil.which("ollama")
     if not ollama_path:
@@ -119,6 +127,7 @@ def build_help_desk_prompt(context_data, user_message):
     return f"""
 You are the AI Help Desk assistant for the Crime Detection and Surveillance System.
 You must answer questions according to the project data ONLY. Do not invent data. If the user asks something outside the scope of this system or the data provided, apologize and clarify your purpose.
+Keep your response concise and direct (around 2 to 4 sentences).
 
 Current System Data:
 {context_data}
@@ -128,12 +137,19 @@ User Request: {user_message}
 
 
 def call_ollama(prompt_text):
+    headers = {"Content-Type": "application/json"}
+    if OLLAMA_API_KEY:
+        headers["Authorization"] = f"Bearer {OLLAMA_API_KEY}"
     payload = {
         "model": OLLAMA_MODEL,
         "prompt": prompt_text,
-        "stream": False
+        "stream": False,
+        "options": {
+            "num_predict": 256,
+            "temperature": 0.7
+        }
     }
-    response = requests.post(f"{OLLAMA_URL}/api/generate", json=payload, timeout=60)
+    response = requests.post(f"{OLLAMA_URL}/api/generate", headers=headers, json=payload, timeout=90)
     response.raise_for_status()
     data = response.json()
     return data.get("response", "No response generated.")
