@@ -370,6 +370,9 @@ function App() {
           }
         } catch (e) {}
       };
+      // EventSource reconnects indefinitely by default. Stop retrying when the
+      // local API is not running so the browser console does not fill up.
+      eventSource.onerror = () => eventSource?.close();
     } catch (e) {
       console.warn('Alerts SSE stream unavailable.');
     }
@@ -899,7 +902,7 @@ function App() {
                       <p className="empty-copy">No locations are currently ranked as worst.</p>
                     ) : (
                       criticalAreas.slice(0, 4).map((area) => (
-                        <div key={area.id} className="list-row">
+                        <div key={area.id ?? area.name} className="list-row">
                           <div>
                             <strong>{area.name}</strong>
                             <span>{area.total_crimes ? area.total_crimes.toLocaleString() : 0} prior incidents</span>
@@ -979,7 +982,7 @@ function App() {
                     .sort((a, b) => b.total_crimes - a.total_crimes)
                     .slice(0, 8)
                     .map((area) => (
-                      <div key={area.id} className="list-row">
+                      <div key={area.id ?? area.name} className="list-row">
                         <div>
                           <strong>{area.name}</strong>
                           <span>Total IPC Crimes: {area.total_crimes.toLocaleString()} | Top Offense: {area.top_crime_name} ({area.top_crime_value.toLocaleString()})</span>

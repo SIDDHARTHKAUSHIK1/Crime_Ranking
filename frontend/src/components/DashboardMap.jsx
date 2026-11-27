@@ -46,7 +46,7 @@ const DashboardMap = ({ areas }) => {
         />
         {areas.map(area => (
           <CircleMarker
-            key={area.id}
+            key={area.id ?? area.name}
             center={[area.lat, area.lng]}
             radius={25}
             pathOptions={{ 
