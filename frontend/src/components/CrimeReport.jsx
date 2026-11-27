@@ -47,7 +47,7 @@ const CrimeReport = () => {
         ) : (
           <ul className="area-list">
             {report.worst_areas.map(area => (
-              <li key={area.id} className="area-item">
+            <li key={area.id ?? area.name} className="area-item">
                 <MapPin size={16} className="text-red" />
                 <div className="area-details">
                   <span className="area-name">{area.name}</span>
